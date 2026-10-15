@@ -1,0 +1,16 @@
+# Render Blueprint: deploys the app as a free web service.
+# In Render: New > Blueprint > pick this repo, then paste your ANTHROPIC_API_KEY when asked.
+services:
+  - type: web
+    name: letter-explainer
+    runtime: python
+    plan: free
+    buildCommand: echo "No dependencies - standard library only"
+    startCommand: python app.py
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: DAILY_AI_LIMIT
+        value: "200"
+      - key: ANTHROPIC_API_KEY
+        sync: false

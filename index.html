@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letter Explainer</title>
+<style>
+  :root {
+    --bg: #f6f4ef; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a65; --line: #e3e0d8;
+    --accent: #1f5f4a; --accent-ink: #ffffff; --ok: #1f7a4d; --ok-bg: #e6f3ec;
+    --warn: #9a5b00; --warn-bg: #fdf1dc; --bad: #a3271f; --bad-bg: #fbe7e5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 24px 16px 8px; max-width: 1180px; margin: 0 auto; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: -0.01em; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  #mode { display: inline-block; margin-top: 10px; font-size: 13px; padding: 3px 10px;
+          border-radius: 999px; background: var(--line); }
+  #mode.offline { background: var(--warn-bg); color: var(--warn); }
+  main { max-width: 1180px; margin: 0 auto; padding: 16px; display: grid;
+         grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  label { font-weight: 600; font-size: 14px; }
+  textarea { width: 100%; min-height: 380px; margin-top: 8px; padding: 12px; border: 1px solid var(--line);
+             border-radius: 8px; font: 13px/1.45 ui-monospace, Menlo, monospace; resize: vertical; }
+  .samples { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+  .samples button { background: transparent; border: 1px solid var(--line); border-radius: 999px;
+                    padding: 4px 10px; font-size: 13px; cursor: pointer; color: var(--ink); }
+  .samples button:hover { border-color: var(--accent); }
+  #go { margin-top: 14px; width: 100%; padding: 12px; border: 0; border-radius: 8px;
+        background: var(--accent); color: var(--accent-ink); font-size: 16px; font-weight: 600; cursor: pointer; }
+  #go:disabled { opacity: .6; cursor: wait; }
+  .empty { color: var(--muted); text-align: center; padding: 60px 10px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  .banner { padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 14px; }
+  .banner.ok { background: var(--ok-bg); color: var(--ok); }
+  .banner.warn { background: var(--warn-bg); color: var(--warn); }
+  .banner.bad { background: var(--bad-bg); color: var(--bad); }
+  .banner ul { margin: 6px 0 0; padding-left: 18px; }
+  .due { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+         border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .due strong { font-size: 26px; }
+  .row { display: grid; grid-template-columns: 150px 1fr auto; gap: 10px; align-items: start;
+         padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .row:last-child { border-bottom: 0; }
+  @media (max-width: 500px) { .row { grid-template-columns: 1fr auto; } .row .what { grid-column: 1 / -1; } }
+  .row .key { font-weight: 600; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.ok { background: var(--ok-bg); color: var(--ok); }
+  .badge.no { background: var(--bad-bg); color: var(--bad); }
+  ul.steps { list-style: none; padding: 0; margin: 0; }
+  ul.steps li { padding: 6px 0; display: flex; gap: 8px; }
+  ul.warnings { margin: 0; padding-left: 18px; color: var(--warn); }
+  footer { max-width: 1180px; margin: 0 auto; padding: 8px 16px 28px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Letter Explainer</h1>
+  <p>Paste a confusing official letter. Get a plain-English summary, the deadlines, what you owe, and what to do next.</p>
+  <span id="mode">Loading…</span>
+</header>
+
+<main>
+  <section class="card">
+    <label for="letter">Letter text</label>
+    <textarea id="letter" placeholder="Paste the full text of the letter here…"></textarea>
+    <div class="samples" id="samples"><span style="font-size:13px;color:var(--muted);align-self:center">Try a sample (fictional):</span></div>
+    <button id="go">Explain this letter</button>
+  </section>
+
+  <section class="card" id="out">
+    <div class="empty">Your explanation will appear here.</div>
+  </section>
+</main>
+
+<footer>
+  Prototype. All sample letters are fictional. Every date and dollar amount is checked against the original letter;
+  anything that can't be found is flagged. This is not legal or tax advice. Confirm important details with the agency.
+</footer>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pretty = (n) => n.replace(/^\d+_/, "").replace(/_/g, " ");
+
+fetch("/api/samples").then(r => r.json()).then(d => {
+  const m = $("#mode");
+  if (d.mode === "ai") { m.textContent = "AI mode · " + d.model; }
+  else { m.textContent = "Offline demo mode: rule-based, no AI (set ANTHROPIC_API_KEY to enable Claude)"; m.className = "offline"; }
+  d.samples.forEach(s => {
+    const b = document.createElement("button");
+    b.textContent = pretty(s.name);
+    b.onclick = () => { $("#letter").value = s.text; };
+    $("#samples").appendChild(b);
+  });
+});
+
+$("#go").onclick = async () => {
+  const btn = $("#go");
+  btn.disabled = true; btn.textContent = "Reading your letter…";
+  try {
+    const r = await fetch("/api/explain", { method: "POST", headers: {"Content-Type": "application/json"},
+                                            body: JSON.stringify({ letter: $("#letter").value }) });
+    render(await r.json());
+  } catch (e) {
+    render({ error: "Could not reach the app server. Is python app.py still running?" });
+  }
+  btn.disabled = false; btn.textContent = "Explain this letter";
+};
+
+function badge(v) {
+  return v ? '<span class="badge ok">✓ found in letter</span>'
+           : '<span class="badge no">⚠ not in letter</span>';
+}
+
+function render(d) {
+  const out = $("#out");
+  if (d.error) { out.innerHTML = `<div class="banner bad"><strong>Can't explain this yet.</strong><br>${esc(d.error)}</div>`; return; }
+
+  let h = "";
+  if (d.notice) h += `<div class="banner warn">${esc(d.notice)}</div>`;
+  if (!d.is_official_letter) {
+    h += `<div class="banner warn"><strong>This doesn't look like an official letter.</strong></div>`;
+  } else if (d.all_verified) {
+    h += `<div class="banner ok">✓ Every date and dollar amount below was found in your letter.</div>`;
+  } else {
+    h += `<div class="banner bad"><strong>Double-check before you act:</strong><ul>${
+      d.verification_issues.map(i => `<li>${esc(i)}</li>`).join("")}</ul></div>`;
+  }
+  if (d.language && !/english|unknown/i.test(d.language)) {
+    h += `<div class="banner warn">This letter is written in ${esc(d.language)}. The explanation below is in English.</div>`;
+  }
+
+  h += `<h2>What this is</h2>`;
+  if (d.sender) h += `<p style="margin:0 0 6px;color:var(--muted);font-size:14px">From: ${esc(d.sender)}</p>`;
+  h += `<p style="margin:0">${esc(d.summary)}</p>`;
+
+  if (d.amount_due_now) {
+    h += `<h2>Amount due</h2><div class="due"><strong>${esc(d.amount_due_now)}</strong>${badge(d.amount_due_verified)}</div>`;
+  }
+  if (d.deadlines?.length) {
+    h += `<h2>Deadlines</h2>` + d.deadlines.map(x =>
+      `<div class="row"><span class="key">${esc(x.date)}</span><span class="what">${esc(x.what)}</span>${badge(x.verified)}</div>`).join("");
+  }
+  if (d.amounts?.length) {
+    h += `<h2>Every amount mentioned</h2>` + d.amounts.map(x =>
+      `<div class="row"><span class="key">${esc(x.amount)}</span><span class="what">${esc(x.what)}</span>${badge(x.verified)}</div>`).join("");
+  }
+  if (d.next_steps?.length) {
+    h += `<h2>What to do next</h2><ul class="steps">` + d.next_steps.map((s, i) =>
+      `<li><input type="checkbox" id="s${i}"><label for="s${i}" style="font-weight:400">${esc(s)}</label></li>`).join("") + `</ul>`;
+  }
+  if (d.warnings?.length) {
+    h += `<h2>Heads up</h2><ul class="warnings">` + d.warnings.map(w => `<li>${esc(w)}</li>`).join("") + `</ul>`;
+  }
+  out.innerHTML = h;
+}
+</script>
+</body>
+</html>

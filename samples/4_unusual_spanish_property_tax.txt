@@ -1,0 +1,12 @@
+[EJEMPLO FICTICIO PARA PRUEBAS - NO ES UN AVISO REAL]
+
+CONDADO DE EJEMPLO - OFICINA DEL TESORERO Y RECAUDADOR DE IMPUESTOS
+FACTURA DE IMPUESTOS SOBRE LA PROPIEDAD - AÑO FISCAL 2026-2027
+
+Propietario: JORDAN SAMPLE      Número de parcela: 000-000-00
+
+Primera cuota:  $1,842.15  -  vence el 1 de noviembre; morosa después del 10 de diciembre de 2026
+Segunda cuota:  $1,842.15  -  vence el 1 de febrero; morosa después del 10 de abril de 2027
+
+Si paga después de la fecha de morosidad, se agregará una multa del 10%.
+Monto total anual: $3,684.30
